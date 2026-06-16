@@ -1,5 +1,6 @@
 import type { AppUser, UserRole } from '@/types/auth'
 import { DEMO_PASSWORD } from '@/config/demo-roles'
+import { router } from '@/router'
 import { validatePensionerCredentials } from '@/lib/pensioner-auth'
 
 const AUTH_KEY = 'pension_session'
@@ -128,7 +129,9 @@ export function clearSession(): void {
 }
 
 export function redirectToLogin(): void {
-  window.location.assign('/login')
+  // Client-side navigation avoids a full reload. On static hosts (e.g. Cloudflare
+  // Workers) deep paths like /login 404 without SPA fallback to index.html.
+  void router.navigate({ to: '/login', replace: true })
 }
 
 export function isAuthenticated(): boolean {
