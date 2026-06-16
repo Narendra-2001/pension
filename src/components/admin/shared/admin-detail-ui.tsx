@@ -24,17 +24,32 @@ interface PensionerAvatarProps {
   name: string
   ppo?: string
   gender?: 'male' | 'female' | 'other'
+  photoUrl?: string
   className?: string
 }
 
-export function PensionerAvatar({ name, ppo, gender, className }: PensionerAvatarProps) {
-  const src = getPensionerAvatarSrc(ppo, gender)
+export function PensionerAvatar({ name, ppo, gender, photoUrl, className }: PensionerAvatarProps) {
+  const src = photoUrl ?? getPensionerAvatarSrc(ppo, gender)
   const initial = name.trim().charAt(0).toUpperCase() || 'P'
+  const hasCustomSize = /\bsize-/.test(className ?? '')
 
   return (
-    <Avatar className={cn('size-16 shrink-0 ring-2 ring-primary/15 sm:size-20', className)}>
+    <Avatar
+      className={cn(
+        'shrink-0',
+        !hasCustomSize && 'size-16 ring-2 ring-primary/15 sm:size-20',
+        className,
+      )}
+    >
       <AvatarImage src={src} alt={name} className="object-cover object-center" />
-      <AvatarFallback className="bg-primary/10 text-lg font-semibold text-primary">{initial}</AvatarFallback>
+      <AvatarFallback
+        className={cn(
+          'bg-primary/10 font-semibold text-primary',
+          hasCustomSize ? 'text-xs' : 'text-lg',
+        )}
+      >
+        {initial}
+      </AvatarFallback>
     </Avatar>
   )
 }
@@ -139,8 +154,8 @@ export function AdminDetailCard({
   headerAction,
 }: AdminDetailCardProps) {
   return (
-    <motion.div variants={adminStaggerItem}>
-      <Card className={cn('admin-card admin-detail-card h-full', className)}>
+    <motion.div variants={adminStaggerItem} className={className}>
+      <Card className="admin-card admin-detail-card h-full">
         <CardHeader className="flex flex-row items-center justify-between gap-3 space-y-0 pb-4">
           <div className="flex min-w-0 items-center gap-3">
             {Icon && (

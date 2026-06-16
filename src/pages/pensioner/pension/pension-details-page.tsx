@@ -1,8 +1,10 @@
 import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
+import { format, parseISO } from 'date-fns'
 import { motion } from 'framer-motion'
 import type { LucideIcon } from 'lucide-react'
 import {
+  ArrowLeft,
   BadgeIndianRupee,
   Calendar,
   CheckCircle2,
@@ -17,12 +19,12 @@ import type { ReactNode } from 'react'
 import { PensionCalculationPreview } from '@/components/admin/pensioners/pension-calculation-preview'
 import { adminStaggerItem } from '@/components/admin/shared/admin-analytics-ui'
 import { PageHeader } from '@/components/admin/shared/page-header'
-import { PageLoadingSkeleton } from '@/components/admin/shared/empty-state'
+import { EmptyState, PageLoadingSkeleton } from '@/components/admin/shared/empty-state'
 import { PensionerPageShell } from '@/components/pensioner/shared/pensioner-page-ui'
 import { getVerificationStatusVariant, StatusPill } from '@/components/pensioner/shared/status-pill'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { fetchPensionerProfile } from '@/data/pensioner-api'
+import { fetchPensionerProfile, fetchPensionStatements } from '@/data/pensioner-api'
 import { fetchPensionStructure } from '@/data/pension-structure-api'
 import { formatCurrency } from '@/data/pensioner-mock-data'
 import {
@@ -31,6 +33,8 @@ import {
   PENSION_TYPE_LABELS,
 } from '@/lib/pension-structure'
 import { useAuth } from '@/providers/auth-provider'
+import type { PensionStatement } from '@/types/pensioner-portal'
+import type { PensionDetails } from '@/types/pensioner'
 import { cn } from '@/lib/utils'
 
 type KpiTone = 'green' | 'amber' | 'rose' | 'slate'
@@ -184,7 +188,67 @@ function InfoField({ label, value }: { label: string; value: ReactNode }) {
   )
 }
 
-export function PensionDetailsPage() {
+const STATEMENT_STATUS_LABELS: Record<PensionStatement['status'], string> = {
+  paid: 'Paid',
+  pending: 'Pending',
+  failed: 'Failed',
+}
+
+function scaleAmount(value: number, factor: number) {
+  return Math.round(value * factor)
+}
+
+function buildStatementBreakdown(
+  pension: PensionDetails,
+  statement: PensionStatement,
+  structureCredits: { label: string; value: number }[],
+  structureDeductions: { label: string; value: number }[],
+) {
+  const grossFactor =
+    pension.grossPension > 0 ? statement.grossPension / pension.grossPension : 1
+
+  const creditItems =
+    structureCredits.length > 0
+      ? structureCredits.map((item) => ({
+          label: item.label,
+          value: scaleAmount(item.value, grossFactor),
+        }))
+      : [
+          { label: 'Basic Pension', value: scaleAmount(pension.basicPension, grossFactor) },
+          { label: 'Dearness Relief', value: scaleAmount(pension.dearnessRelief, grossFactor) },
+          { label: 'Medical Allowance', value: scaleAmount(pension.medicalAllowance, grossFactor) },
+          { label: 'Special Allowance', value: scaleAmount(pension.specialAllowance, grossFactor) },
+          { label: 'Arrears', value: scaleAmount(pension.arrears, grossFactor) },
+        ]
+
+  const deductionItems =
+    structureDeductions.length > 0
+      ? [
+          { label: 'Recovery', value: statement.recoveryAmount },
+          ...structureDeductions
+            .filter((item) => !item.label.toLowerCase().includes('recovery'))
+            .map((item) => ({
+              label: item.label,
+              value: scaleAmount(item.value, grossFactor),
+            })),
+        ]
+      : [
+          { label: 'Recovery Deduction', value: statement.recoveryAmount },
+          { label: 'Tax & Other Deductions', value: statement.deductions },
+        ]
+
+  const totalDeductions = statement.recoveryAmount + statement.deductions
+
+  return {
+    creditItems,
+    deductionItems,
+    grossPension: statement.grossPension,
+    netPension: statement.netPension,
+    totalDeductions,
+  }
+}
+
+export function PensionDetailsPage({ month }: { month?: string }) {
   const { user } = useAuth()
   const pensionerId = user?.pensionerId ?? ''
 
@@ -200,7 +264,35 @@ export function PensionDetailsPage() {
     enabled: !!pensionerId,
   })
 
-  if (isLoading || !record) return <PageLoadingSkeleton />
+  const { data: statements, isLoading: statementsLoading } = useQuery({
+    queryKey: ['pensioner-statements', pensionerId],
+    queryFn: () => fetchPensionStatements(pensionerId),
+    enabled: !!pensionerId && !!month,
+  })
+
+  if (isLoading || !record || (month && statementsLoading)) return <PageLoadingSkeleton />
+
+  const statement = month ? statements?.find((item) => item.month === month) : undefined
+
+  if (month && !statement) {
+    return (
+      <PensionerPageShell>
+        <EmptyState
+          icon={<FileText className="size-7 text-muted-foreground" />}
+          title="Statement not found"
+          description={`No pension statement was found for ${month}.`}
+          action={
+            <Button variant="outline" className="rounded-full" asChild>
+              <Link to="/pensioner/statements">
+                <ArrowLeft className="mr-1 size-3.5" />
+                Back to Statements
+              </Link>
+            </Button>
+          }
+        />
+      </PensionerPageShell>
+    )
+  }
 
   const { pension, service } = record
   const master = structure?.master
@@ -226,7 +318,16 @@ export function PensionDetailsPage() {
         { label: 'Recovery Deduction', value: pension.recoveryDeduction },
       ]
 
-  const totalDeductions = deductionItems.reduce((sum, item) => sum + item.value, 0)
+  const breakdown = statement
+    ? buildStatementBreakdown(pension, statement, creditItems, deductionItems)
+    : {
+        creditItems,
+        deductionItems,
+        grossPension: pension.grossPension,
+        netPension: pension.netPension,
+        totalDeductions: deductionItems.reduce((sum, item) => sum + item.value, 0),
+      }
+
   const pensionTypeLabel = master
     ? PENSION_TYPE_LABELS[master.pensionType]
     : service.pensionType.replace('_', ' ')
@@ -237,14 +338,28 @@ export function PensionDetailsPage() {
         <PageHeader
           variant="admin"
           title="Pension Details"
-          description="View your monthly pension breakdown, credits, deductions, and payment summary"
+          description={
+            statement
+              ? `${statement.month} statement — monthly pension breakdown and payment history`
+              : 'View your monthly pension breakdown, credits, deductions, and payment summary'
+          }
           actions={
-            <Button variant="outline" className="rounded-xl border-border bg-card" asChild>
-              <Link to="/pensioner/pension/history">
-                <History className="size-4" />
-                View History
-              </Link>
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              {statement && (
+                <Button variant="outline" className="rounded-xl border-border bg-card" asChild>
+                  <Link to="/pensioner/statements">
+                    <ArrowLeft className="size-4" />
+                    Back to Statements
+                  </Link>
+                </Button>
+              )}
+              <Button variant="outline" className="rounded-xl border-border bg-card" asChild>
+                <Link to="/pensioner/pension/history">
+                  <History className="size-4" />
+                  View History
+                </Link>
+              </Button>
+            </div>
           }
         />
       </motion.div>
@@ -252,27 +367,36 @@ export function PensionDetailsPage() {
       <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <PensionKpiCard
           label="Net Monthly Pension"
-          value={formatCurrency(pension.netPension)}
+          value={formatCurrency(breakdown.netPension)}
           icon={BadgeIndianRupee}
           tone="green"
         />
         <PensionKpiCard
           label="Gross Pension"
-          value={formatCurrency(pension.grossPension)}
+          value={formatCurrency(breakdown.grossPension)}
           icon={TrendingUp}
           tone="green"
           delay={0.06}
         />
         <PensionKpiCard
           label="Total Deductions"
-          value={formatCurrency(totalDeductions)}
+          value={formatCurrency(breakdown.totalDeductions)}
           icon={Minus}
           tone="amber"
           delay={0.12}
         />
         <PensionKpiCard
-          label="Pension Status"
-          value={<StatusPill label="Active" variant={getVerificationStatusVariant('Active')} />}
+          label={statement ? 'Payment Status' : 'Pension Status'}
+          value={
+            statement ? (
+              <StatusPill
+                label={STATEMENT_STATUS_LABELS[statement.status]}
+                variant={getVerificationStatusVariant(statement.status)}
+              />
+            ) : (
+              <StatusPill label="Active" variant={getVerificationStatusVariant('Active')} />
+            )
+          }
           icon={CheckCircle2}
           tone="slate"
           delay={0.18}
@@ -285,26 +409,28 @@ export function PensionDetailsPage() {
             <CardHeader className="border-b border-border/50 bg-muted/30 px-5 py-4">
               <CardTitle className="text-base font-bold">Monthly Pension Breakdown</CardTitle>
               <p className="text-sm text-muted-foreground">
-                Credits, deductions, and net payable for the current month
+                {statement
+                  ? `Credits, deductions, and net payable for ${statement.month}`
+                  : 'Credits, deductions, and net payable for the current month'}
               </p>
             </CardHeader>
             <CardContent className="space-y-5 p-5">
               <BreakdownTable
                 title="Credits & Allowances"
-                rows={creditItems.map((item) => ({
+                rows={breakdown.creditItems.map((item) => ({
                   label: item.label,
                   value: formatCurrency(item.value),
                 }))}
                 footer={{
                   label: 'Gross Pension',
-                  value: formatCurrency(pension.grossPension),
+                  value: formatCurrency(breakdown.grossPension),
                 }}
               />
 
               <BreakdownTable
                 title="Deductions"
                 tone="deduction"
-                rows={deductionItems.map((item) => ({
+                rows={breakdown.deductionItems.map((item) => ({
                   label: item.label,
                   value: `−${formatPensionCurrency(item.value)}`,
                   negative: true,
@@ -319,7 +445,7 @@ export function PensionDetailsPage() {
                   </p>
                 </div>
                 <p className="text-2xl font-bold tabular-nums text-emerald-700">
-                  {formatCurrency(pension.netPension)}
+                  {formatCurrency(breakdown.netPension)}
                 </p>
               </div>
             </CardContent>
@@ -327,6 +453,39 @@ export function PensionDetailsPage() {
         </motion.div>
 
         <motion.div variants={adminStaggerItem} className="space-y-5 lg:col-span-2">
+          {statement && (
+            <Card className="overflow-hidden rounded-2xl border border-border/70 bg-card shadow-[0_1px_3px_rgba(15,23,42,0.05),0_8px_24px_rgba(15,23,42,0.04)]">
+              <CardHeader className="border-b border-border/50 bg-muted/30 px-5 py-4">
+                <CardTitle className="text-base font-bold">Payment History</CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Disbursement details for {statement.month}
+                </p>
+              </CardHeader>
+              <CardContent className="px-5 py-2">
+                <InfoField label="Statement Month" value={statement.month} />
+                <InfoField
+                  label="Payment Status"
+                  value={
+                    <StatusPill
+                      label={STATEMENT_STATUS_LABELS[statement.status]}
+                      variant={getVerificationStatusVariant(statement.status)}
+                    />
+                  }
+                />
+                <InfoField label="UTR Reference" value={statement.utrReference ?? '—'} />
+                <InfoField
+                  label="NEFT Credited On"
+                  value={
+                    statement.neftCreditedAt
+                      ? format(parseISO(statement.neftCreditedAt), 'dd MMM yyyy')
+                      : '—'
+                  }
+                />
+                <InfoField label="Net Amount Paid" value={formatCurrency(statement.netPension)} />
+              </CardContent>
+            </Card>
+          )}
+
           <Card className="overflow-hidden rounded-2xl border border-border/70 bg-card shadow-[0_1px_3px_rgba(15,23,42,0.05),0_8px_24px_rgba(15,23,42,0.04)]">
             <CardHeader className="border-b border-border/50 px-5 py-4">
               <div className="flex items-center gap-3">

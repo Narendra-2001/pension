@@ -27,6 +27,8 @@ import { RestorationRequestsPage } from '@/pages/admin/suspensions/restoration-r
 import { RestorationDetailPage } from '@/pages/admin/suspensions/restoration-detail-page'
 import { AddPensionerPage } from '@/pages/admin/pensioners/add-pensioner-page'
 import { BulkImportPage } from '@/pages/admin/pensioners/bulk-import-page'
+import { BulkDisbursementPage } from '@/pages/admin/disbursements/bulk-disbursement-page'
+import { ManualDisbursementPage } from '@/pages/admin/disbursements/manual-disbursement-page'
 import { PendingActivationsPage } from '@/pages/admin/pensioners/pending-activations-page'
 import { PensionersListPage } from '@/pages/admin/pensioners/pensioners-list-page'
 import { ViewPensionerPage } from '@/pages/admin/pensioners/view-pensioner-page'
@@ -243,6 +245,18 @@ const adminBulkImportRoute = createRoute({
   getParentRoute: () => adminLayoutRoute,
   path: '/pensioners/bulk-import',
   component: BulkImportPage,
+})
+
+const adminBulkDisbursementRoute = createRoute({
+  getParentRoute: () => adminLayoutRoute,
+  path: '/disbursements/bulk',
+  component: BulkDisbursementPage,
+})
+
+const adminManualDisbursementRoute = createRoute({
+  getParentRoute: () => adminLayoutRoute,
+  path: '/disbursements/manual',
+  component: ManualDisbursementPage,
 })
 
 const adminPendingActivationsRoute = createRoute({
@@ -1249,10 +1263,18 @@ const pensionerProfileRequestDetailRoute = createRoute({
   },
 })
 
+const pensionerPensionSearchSchema = z.object({
+  month: z.string().optional(),
+})
+
 const pensionerPensionRoute = createRoute({
   getParentRoute: () => pensionerLayoutRoute,
   path: '/pension',
-  component: PensionDetailsPage,
+  validateSearch: pensionerPensionSearchSchema,
+  component: function PensionerPensionRoute() {
+    const { month } = pensionerPensionRoute.useSearch()
+    return <PensionDetailsPage month={month} />
+  },
 })
 
 const pensionerPensionHistoryRoute = createRoute({
@@ -1589,6 +1611,8 @@ const routeTree = rootRoute.addChildren([
     adminPensionersRoute,
     adminAddPensionerRoute,
     adminBulkImportRoute,
+    adminBulkDisbursementRoute,
+    adminManualDisbursementRoute,
     adminPendingActivationsRoute,
     adminEditPensionerRoute,
     adminViewPensionerRoute,

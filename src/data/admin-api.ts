@@ -1,4 +1,14 @@
 import {
+  confirmBulkDisbursement,
+  generateBulkDisbursementPreview,
+  recordManualDisbursement,
+} from '@/data/disbursement-mock-data'
+import type {
+  BulkDisbursementResult,
+  ConfirmBulkDisbursementInput,
+  ManualDisbursementInput,
+} from '@/types/disbursement'
+import {
   addPensioner,
   dashboardStats,
   deletePensioner,
@@ -155,6 +165,29 @@ export async function processBulkImport(fileName: string): Promise<BulkImportRes
 export async function confirmBulkImport(validRecordIds: string[]): Promise<{ imported: number }> {
   await delay(1200)
   return { imported: validRecordIds.length }
+}
+
+export async function processBulkDisbursement(
+  fileName: string,
+  paymentMonth: string,
+): Promise<BulkDisbursementResult> {
+  await delay(1500)
+  return generateBulkDisbursementPreview(fileName, paymentMonth)
+}
+
+export async function confirmBulkDisbursementBatch(
+  input: ConfirmBulkDisbursementInput,
+): Promise<{ processed: number; totalNetAmount: number }> {
+  await delay(1200)
+  return confirmBulkDisbursement(input)
+}
+
+export async function createManualDisbursement(
+  input: ManualDisbursementInput,
+): Promise<{ statementId: string; netPension: number }> {
+  await delay(800)
+  const statement = recordManualDisbursement(input)
+  return { statementId: statement.id, netPension: statement.netPension }
 }
 
 export { generatePensionerId }

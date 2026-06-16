@@ -173,6 +173,7 @@ export function toListItem(record: PensionerRecord): PensionerListItem {
     id: record.id,
     ppoNumber: record.service.ppoNumber,
     name: getPensionerFullName(record.personal),
+    gender: record.personal.gender,
     mobileNumber: record.personal.mobileNumber,
     emailAddress: record.personal.emailAddress,
     pensionType: record.service.pensionType,

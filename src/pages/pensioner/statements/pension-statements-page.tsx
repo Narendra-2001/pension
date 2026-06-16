@@ -1,7 +1,8 @@
 import { useListViewMode } from '@/hooks/use-list-view-mode'
 import { useQuery } from '@tanstack/react-query'
+import { useNavigate } from '@tanstack/react-router'
 import type { ColumnDef } from '@tanstack/react-table'
-import { Download, Printer } from 'lucide-react'
+import { Download, Eye, Printer } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
 
@@ -23,17 +24,26 @@ import {
 import { fetchPensionStatements } from '@/data/pensioner-api'
 import { formatCurrency } from '@/data/pensioner-mock-data'
 import { matchesListSearch } from '@/lib/list-search'
+import { useAuth } from '@/providers/auth-provider'
 import type { PensionStatement } from '@/types/pensioner-portal'
 
 export function PensionStatementsPage() {
+  const { user } = useAuth()
+  const navigate = useNavigate()
+  const pensionerId = user?.pensionerId ?? ''
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<'all' | PensionStatement['status']>('all')
   const [viewMode, setViewMode] = useListViewMode()
 
   const { data: statements, isLoading } = useQuery({
-    queryKey: ['pensioner-statements'],
-    queryFn: fetchPensionStatements,
+    queryKey: ['pensioner-statements', pensionerId],
+    queryFn: () => fetchPensionStatements(pensionerId),
+    enabled: !!pensionerId,
   })
+
+  const handleViewStatement = (stmt: PensionStatement) => {
+    navigate({ to: '/pensioner/pension', search: { month: stmt.month } })
+  }
 
   const handleAction = (action: string, month: string) => {
     toast.success(`${action} — ${month}`, { description: 'Demo action completed' })
@@ -87,6 +97,14 @@ export function PensionStatementsPage() {
         header: 'Actions',
         cell: ({ row }) => (
           <div className="flex gap-1">
+            <Button
+              size="icon-sm"
+              variant="ghost"
+              title="View statement"
+              onClick={() => handleViewStatement(row.original)}
+            >
+              <Eye className="size-4" />
+            </Button>
             <Button size="icon-sm" variant="ghost" onClick={() => handleAction('Download PDF', row.original.month)}>
               <Download className="size-4" />
             </Button>
@@ -97,11 +115,14 @@ export function PensionStatementsPage() {
         ),
       },
     ],
-    [],
+    [navigate],
   )
 
   const stmtActions = (stmt: PensionStatement) => (
     <div className="flex gap-2">
+      <Button size="sm" variant="outline" className="rounded-full" onClick={() => handleViewStatement(stmt)}>
+        <Eye className="mr-1 size-3.5" /> View
+      </Button>
       <Button size="sm" variant="outline" className="rounded-full" onClick={() => handleAction('Download PDF', stmt.month)}>
         <Download className="mr-1 size-3.5" /> Download
       </Button>

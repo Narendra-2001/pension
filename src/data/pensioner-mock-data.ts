@@ -283,7 +283,7 @@ let pensionerStore: PensionerRecord[] = [
   createSuspendedDemoPensioner(),
 ]
 
-const statements: PensionStatement[] = [
+const defaultStatements: PensionStatement[] = [
   {
     id: 'stmt-1',
     month: 'June 2025',
@@ -373,6 +373,10 @@ const statements: PensionStatement[] = [
     neftCreditedAt: '2024-11-01',
   },
 ]
+
+let statementStore: Record<string, PensionStatement[]> = {
+  'PEN-DEMO-001': [...defaultStatements],
+}
 
 const recoveryCase: RecoveryCase = {
   caseId: 'REC-2024-0892',
@@ -702,8 +706,23 @@ export function getPensionerDocuments(record: PensionerRecord): PensionerDocumen
   }))
 }
 
-export function getStatements() {
-  return statements
+export function getStatements(pensionerId = 'PEN-DEMO-001') {
+  return statementStore[pensionerId] ?? []
+}
+
+export function hasStatementForMonth(pensionerId: string, month: string) {
+  return getStatements(pensionerId).some(
+    (statement) => statement.month.toLowerCase() === month.toLowerCase(),
+  )
+}
+
+export function addPensionStatement(pensionerId: string, statement: PensionStatement) {
+  const existing = statementStore[pensionerId] ?? []
+  statementStore = {
+    ...statementStore,
+    [pensionerId]: [statement, ...existing.filter((entry) => entry.month !== statement.month)],
+  }
+  return statement
 }
 
 export function getRecoveryCase() {

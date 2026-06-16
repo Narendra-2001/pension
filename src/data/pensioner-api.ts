@@ -110,7 +110,7 @@ export async function fetchPensionerDashboard(pensionerId: string): Promise<Pens
   const rejection = getPensionerVerificationRejection(pensionerId)
   const recovery = await fetchPensionerRecoverySummary(pensionerId)
   const baseSummary = getDashboardSummary(record)
-  const allStatements = getStatements()
+  const allStatements = getStatements(pensionerId)
   const recentStatements = allStatements.slice(0, 6)
   const allNotifications = getNotifications()
   const grievanceTickets = await fetchGrievanceTicketsByPensioner(pensionerId)
@@ -134,9 +134,9 @@ export async function fetchPensionerDashboard(pensionerId: string): Promise<Pens
   }
 }
 
-export async function fetchPensionStatements(): Promise<PensionStatement[]> {
+export async function fetchPensionStatements(pensionerId: string): Promise<PensionStatement[]> {
   await delay()
-  return getStatements()
+  return getStatements(pensionerId)
 }
 
 export async function fetchRecoveryStatus(pensionerId: string): Promise<RecoveryCase | null> {

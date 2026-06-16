@@ -119,6 +119,7 @@ export interface PensionerListItem {
   id: string
   ppoNumber: string
   name: string
+  gender: Gender
   mobileNumber: string
   emailAddress: string
   pensionType: PensionType

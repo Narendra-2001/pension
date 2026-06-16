@@ -33,6 +33,9 @@ const ADMIN_BREADCRUMB_MAP: Record<string, string> = {
   pensioners: 'Pensioners',
   add: 'Add pensioner',
   'bulk-import': 'Bulk import',
+  disbursements: 'Disbursements',
+  bulk: 'Bulk monthly payment',
+  manual: 'Manual payment entry',
   'pending-activations': 'Pending activations',
   recovery: 'Recovery',
   'profile-updates': 'Profile updates',
@@ -177,8 +180,8 @@ export function AppAdminTopBar({ portal = 'admin', onSignOut, onMenuClick }: App
     (isPensioner ? 'Portal' : isSuperAdmin ? 'Today' : 'Today')
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border/50 bg-background/90 backdrop-blur-xl supports-[backdrop-filter]:bg-background/75">
-      <div className="flex h-14 w-full min-w-0 items-center gap-2 px-3 sm:gap-3 sm:px-4 md:px-5 lg:px-6 xl:px-8">
+    <header className="sticky top-0 z-40 border-b border-border/80 bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/70">
+      <div className="flex h-14 w-full min-w-0 items-center gap-2 px-4 sm:gap-3 md:px-6 lg:px-8">
         {onMenuClick && (
           <Button
             type="button"
@@ -196,18 +199,18 @@ export function AppAdminTopBar({ portal = 'admin', onSignOut, onMenuClick }: App
           {currentPageLabel}
         </p>
 
-        <nav className="hidden min-w-0 flex-1 items-center gap-1.5 text-xs lg:flex" aria-label="Breadcrumb">
+        <nav className="hidden min-w-0 flex-1 items-center gap-1 text-xs lg:flex" aria-label="Breadcrumb">
           {crumbs.map((crumb) => (
-            <span key={crumb.href} className="flex items-center gap-1.5">
+            <span key={crumb.href} className="flex items-center gap-1">
               {crumb.href !== crumbs[0].href && (
-                <ChevronRight className="size-3 text-muted-foreground/70" />
+                <ChevronRight className="size-3 text-muted-foreground/50" />
               )}
               {crumb.isLast ? (
-                <span className="truncate font-normal text-foreground/90">{crumb.label}</span>
+                <span className="truncate font-medium text-foreground">{crumb.label}</span>
               ) : (
                 <Link
                   to={crumb.href}
-                  className="truncate font-normal text-muted-foreground transition-colors hover:text-foreground"
+                  className="truncate text-muted-foreground transition-colors hover:text-foreground"
                 >
                   {crumb.label}
                 </Link>
@@ -219,11 +222,11 @@ export function AppAdminTopBar({ portal = 'admin', onSignOut, onMenuClick }: App
         {(portal === 'admin' || portal === 'superadmin') && (
           <div className="hidden flex-1 justify-center px-4 md:flex lg:max-w-md lg:flex-none xl:max-w-lg xl:flex-1">
             <label className="admin-topbar-search group relative flex w-full max-w-md items-center">
-              <Search className="pointer-events-none absolute left-3.5 size-4 text-muted-foreground transition-colors group-focus-within:text-primary" />
+              <Search className="pointer-events-none absolute left-3 size-4 text-muted-foreground transition-colors group-focus-within:text-foreground" />
               <input
                 type="search"
                 placeholder="Search pensioners, PPO, departments..."
-                className="h-10 w-full rounded-lg border border-border bg-muted/50 pl-10 pr-4 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground/80 focus:border-primary/40 focus:bg-card focus:ring-1 focus:ring-primary/20"
+                className="h-9 w-full rounded-lg border border-border/80 bg-muted/40 pl-9 pr-3 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-foreground/20 focus:bg-card focus:ring-1 focus:ring-ring/30"
               />
             </label>
           </div>
@@ -249,8 +252,8 @@ export function AppAdminTopBar({ portal = 'admin', onSignOut, onMenuClick }: App
                   <div
                     key={n.id}
                     className={cn(
-                      'border-b border-border/40 px-4 py-3.5 last:border-0',
-                      n.unread && 'bg-primary/[0.04]',
+                      'border-b border-border/40 px-4 py-3 last:border-0',
+                      n.unread && 'bg-muted/50',
                     )}
                   >
                     <p className="text-sm font-medium">{n.title}</p>
@@ -274,13 +277,13 @@ export function AppAdminTopBar({ portal = 'admin', onSignOut, onMenuClick }: App
             <DropdownMenuTrigger asChild>
               <button
                 type="button"
-                className="group flex max-w-[12.5rem] items-center gap-2.5 rounded-lg border border-border bg-card py-1 pl-1 pr-2.5 transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 data-[state=open]:border-primary/30 sm:max-w-none sm:pr-3"
+                className="group flex max-w-[12.5rem] items-center gap-2 rounded-lg py-1 pl-1 pr-2 transition-colors hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 data-[state=open]:bg-muted/60 sm:max-w-none sm:pr-3"
               >
                 <UserAvatar
                   user={user}
                   name={displayName}
-                  className="size-9 shrink-0 ring-1 ring-border"
-                  fallbackClassName="bg-primary/10 text-xs font-semibold text-primary"
+                  className="size-8 shrink-0 ring-1 ring-border/80"
+                  fallbackClassName="bg-muted text-xs font-medium text-foreground"
                 />
                 <div className="hidden min-w-0 flex-1 text-left sm:block">
                   <p className="truncate text-sm font-medium leading-tight text-foreground">{displayName}</p>
@@ -297,13 +300,13 @@ export function AppAdminTopBar({ portal = 'admin', onSignOut, onMenuClick }: App
                 <UserAvatar
                   user={user}
                   name={displayName}
-                  className="size-12 shrink-0 ring-2 ring-primary/20"
-                  fallbackClassName="bg-primary/10 font-semibold text-primary"
+                  className="size-11 shrink-0 ring-1 ring-border/80"
+                  fallbackClassName="bg-muted font-medium text-foreground"
                 />
                 <div className="min-w-0">
                   <p className="truncate font-semibold text-foreground">{displayName}</p>
                   <p className="truncate text-xs text-muted-foreground">{displayEmail}</p>
-                  <span className="mt-1.5 inline-flex rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary">
+                  <span className="mt-1.5 inline-flex rounded-md bg-muted px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
                     {roleLabel}
                   </span>
                 </div>

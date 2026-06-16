@@ -1,13 +1,39 @@
 import { Link } from '@tanstack/react-router'
 import { motion } from 'framer-motion'
 import { ArrowBigRight, ArrowRight } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
 
+import { workflowVideos } from '@/assets/media'
 import { HeroFlowVisual } from '@/components/landing/hero-flow-visual'
 import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'
 
 const headlineWords = ['Modern', 'Pension', 'Management', 'Platform']
 
 export function HeroSection() {
+  const [demoOpen, setDemoOpen] = useState(false)
+  const demoVideoRef = useRef<HTMLVideoElement>(null)
+
+  useEffect(() => {
+    const video = demoVideoRef.current
+    if (!video) return
+
+    if (demoOpen) {
+      video.currentTime = 0
+      void video.play().catch(() => undefined)
+      return
+    }
+
+    video.pause()
+  }, [demoOpen])
+
   return (
     <section className="relative overflow-hidden pt-24">
       <div className="pointer-events-none absolute inset-0 mesh-gradient" />
@@ -83,17 +109,37 @@ export function HeroSection() {
           transition={{ duration: 0.5, delay: 0.85 }}
           className="mt-10 flex flex-wrap items-center justify-center gap-4 sm:gap-6"
         >
-          <Button
-            variant="outline"
-            size="lg"
-            className="rounded-2xl border-icy-blue-200 bg-white px-6 hover:bg-icy-blue-50"
-            asChild
-          >
-            <Link to="/dashboard-preview">
-              Watch Demo
-              <ArrowRight className="size-4" />
-            </Link>
-          </Button>
+          <Dialog open={demoOpen} onOpenChange={setDemoOpen}>
+            <DialogTrigger asChild>
+              <Button
+                variant="outline"
+                size="lg"
+                className="rounded-2xl border-icy-blue-200 bg-white px-6 hover:bg-icy-blue-50"
+              >
+                Watch Demo
+                <ArrowRight className="size-4" />
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="gap-0 overflow-hidden p-0 sm:max-w-4xl">
+              <DialogHeader className="px-6 pt-6">
+                <DialogTitle>Register Pensioner Demo</DialogTitle>
+                <DialogDescription className="sr-only">
+                  Walkthrough of registering a pensioner in PensionFlow.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="aspect-video bg-black">
+                <video
+                  ref={demoVideoRef}
+                  src={workflowVideos.registerPensionerCapture}
+                  className="size-full"
+                  controls
+                  playsInline
+                  preload="metadata"
+                  aria-label="Register pensioner demo video"
+                />
+              </div>
+            </DialogContent>
+          </Dialog>
           <p className="text-sm text-muted-foreground">
             14-day free trial · No credit card required
           </p>

@@ -22,8 +22,7 @@ import {
   AdminPageShell,
   PensionerAvatar,
 } from '@/components/admin/shared/admin-detail-ui'
-import { PensionCalculationPreview } from '@/components/admin/pensioners/pension-calculation-preview'
-import { PensionComponentTable } from '@/components/admin/pensioners/pension-component-table'
+import { PensionStructureOverview } from '@/components/admin/pensioners/pension-structure-overview'
 import { PageLoadingSkeleton } from '@/components/admin/shared/empty-state'
 import { StatusBadge, VerificationBadge } from '@/components/admin/shared/status-badge'
 import { Button } from '@/components/ui/button'
@@ -87,6 +86,7 @@ export function ViewPensionerPage({ pensionerId }: ViewPensionerPageProps) {
             name={fullName}
             ppo={service.ppoNumber}
             gender={personal.gender}
+            photoUrl={personal.photoUrl}
           />
         }
         title={fullName}
@@ -177,14 +177,10 @@ export function ViewPensionerPage({ pensionerId }: ViewPensionerPageProps) {
       </AdminDetailGrid>
 
       {structure && (
-        <AdminDetailGrid columns={1}>
-          <div className="grid gap-5 lg:grid-cols-3">
-            <AdminDetailCard title="Pension Components" icon={Calculator} tone="blue" className="lg:col-span-2">
-              <PensionComponentTable components={structure.components} />
-            </AdminDetailCard>
-            <PensionCalculationPreview components={structure.components} />
-          </div>
-        </AdminDetailGrid>
+        <PensionStructureOverview
+          components={structure.components}
+          ppoRouteRef={ppoRouteRef}
+        />
       )}
 
       <AdminDetailGrid>

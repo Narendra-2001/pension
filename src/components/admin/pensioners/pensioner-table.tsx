@@ -2,6 +2,7 @@ import { Link } from '@tanstack/react-router'
 import type { ColumnDef } from '@tanstack/react-table'
 import { Eye, MoreHorizontal, Pencil, Trash2 } from 'lucide-react'
 
+import { PensionerAvatar } from '@/components/admin/shared/admin-detail-ui'
 import { DataListView } from '@/components/admin/shared/data-list-view'
 import type { ViewMode } from '@/components/admin/shared/view-mode-toggle'
 import { ListRecordCard } from '@/components/admin/shared/list-record-card'
@@ -46,7 +47,20 @@ export function createPensionerColumns(onDelete: (id: string) => void): ColumnDe
     {
       accessorKey: 'name',
       header: ({ column }) => <SortableHeader column={column}>Pensioner Name</SortableHeader>,
-      cell: ({ row }) => <span className="font-medium">{row.getValue('name')}</span>,
+      cell: ({ row }) => {
+        const pensioner = row.original
+        return (
+          <span className="flex items-center gap-2">
+            <PensionerAvatar
+              name={pensioner.name}
+              ppo={pensioner.ppoNumber}
+              gender={pensioner.gender}
+              className="size-6 ring-1 ring-border/60"
+            />
+            <span className="font-medium">{pensioner.name}</span>
+          </span>
+        )
+      },
     },
     {
       accessorKey: 'mobileNumber',
@@ -258,7 +272,17 @@ export function PensionerTable({
       renderCard={(pensioner, serialNo) => (
         <ListRecordCard
           serialNo={serialNo}
-          title={pensioner.name}
+          title={
+            <span className="flex items-center gap-2">
+              <PensionerAvatar
+                name={pensioner.name}
+                ppo={pensioner.ppoNumber}
+                gender={pensioner.gender}
+                className="size-8 ring-1 ring-border/60"
+              />
+              <span>{pensioner.name}</span>
+            </span>
+          }
           subtitle={pensioner.ppoNumber}
           badges={
             <>

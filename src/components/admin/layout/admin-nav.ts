@@ -12,6 +12,8 @@ import {
   Upload,
   UserPen,
   Users,
+  Wallet,
+  PenLine,
 } from 'lucide-react'
 
 import type { NavGroup } from '@/components/admin/layout/app-admin-sidebar'
@@ -36,6 +38,15 @@ export const adminNavGroups: NavGroup[] = [
       { label: 'Bulk Import', href: '/admin/pensioners/bulk-import', icon: Upload },
       { label: 'Pending Activations', href: '/admin/pensioners/pending-activations', icon: Users },
       { label: 'Profile Update Requests', href: '/admin/profile-updates', icon: UserPen },
+    ],
+  },
+  {
+    id: 'disbursements',
+    label: 'Disbursements',
+    icon: Wallet,
+    items: [
+      { label: 'Manual Payment Entry', href: '/admin/disbursements/manual', icon: PenLine },
+      { label: 'Bulk Monthly Payment', href: '/admin/disbursements/bulk', icon: Upload },
     ],
   },
   {
@@ -85,7 +96,6 @@ export const adminNavGroups: NavGroup[] = [
     label: 'Grievances',
     icon: MessageSquare,
     items: [
-      { label: 'Helpdesk Dashboard', href: '/admin/grievance/dashboard', icon: LayoutDashboard },
       { label: 'Ticket Queue', href: '/admin/grievance/tickets', icon: ClipboardList },
       { label: 'Reports', href: '/admin/grievance/reports', icon: FileText },
       { label: 'Audit Trail', href: '/admin/grievance/audit', icon: FileText },
