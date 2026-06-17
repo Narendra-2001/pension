@@ -35,6 +35,58 @@ export interface ConfirmBulkDisbursementInput {
   preview: BulkDisbursementResult
 }
 
+export type MonthlyPaymentChangeCategory =
+  | 'new_pensioner'
+  | 'family_pension'
+  | 'reactivation'
+  | 'deceased'
+  | 'suspended'
+  | 'dr_revision'
+  | 'medical_allowance_revision'
+  | 'correction'
+
+export interface MonthlyPaymentAccountChange {
+  id: string
+  category: MonthlyPaymentChangeCategory
+  label: string
+  description: string
+  accountDelta: number
+  payoutDelta?: number
+}
+
+export interface MonthlyPaymentAccountSample {
+  ppoNumber: string
+  pensionerName: string
+  reason: string
+  category: MonthlyPaymentChangeCategory
+}
+
+export interface MonthlyPaymentForecast {
+  nextMonth: string
+  projectedNewPensioners: number
+  projectedFamilyPension: number
+  projectedNetAccountChange: number
+  projectedAccountTotal: number
+  projectedPayoutIncrease: number
+  summary: string
+}
+
+export interface MonthlyPaymentAccountSummary {
+  paymentMonth: string
+  previousMonth: string
+  previousMonthAccounts: number
+  currentMonthAccounts: number
+  netAccountChange: number
+  changePercent: number
+  previousMonthPayout: number
+  currentMonthPayout: number
+  netPayoutChange: number
+  changes: MonthlyPaymentAccountChange[]
+  samples: MonthlyPaymentAccountSample[]
+  narrativeSummary: string
+  forecast: MonthlyPaymentForecast
+}
+
 export interface ManualDisbursementInput {
   pensionerId: string
   paymentMonth: string

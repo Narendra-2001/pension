@@ -17,6 +17,8 @@ import {
 import { useCallback, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 
+import { BulkDisbursementEditSheet } from '@/components/admin/disbursements/bulk-disbursement-edit-sheet'
+import { BulkPaymentMonthComparison } from '@/components/admin/disbursements/bulk-payment-month-comparison'
 import { adminTableStyles } from '@/components/admin/shared/admin-table-styles'
 import {
   AdminDetailHero,
@@ -53,9 +55,10 @@ import {
   createDemoDisbursementFile,
   downloadBulkDisbursementTemplate,
 } from '@/lib/bulk-disbursement-demo'
+import { applyBulkDisbursementRecordEdit } from '@/lib/bulk-disbursement-validation'
 import { buildPaymentMonthOptions } from '@/lib/disbursement-schema'
 import { cn } from '@/lib/utils'
-import type { BulkDisbursementResult } from '@/types/disbursement'
+import type { BulkDisbursementRecord, BulkDisbursementResult } from '@/types/disbursement'
 
 type ImportPhase = 'upload' | 'processing' | 'preview' | 'done'
 
@@ -88,6 +91,8 @@ export function BulkDisbursementPage() {
   const [fileName, setFileName] = useState('')
   const [progress, setProgress] = useState(0)
   const [result, setResult] = useState<BulkDisbursementResult | null>(null)
+  const [editingRecord, setEditingRecord] = useState<BulkDisbursementRecord | null>(null)
+  const [editSheetOpen, setEditSheetOpen] = useState(false)
 
   const processMutation = useMutation({
     mutationFn: ({ file, month }: { file: string; month: string }) =>
@@ -159,6 +164,17 @@ export function BulkDisbursementPage() {
     toast.success('Demo payment file loaded', {
       description: 'Processing sample CSV for the selected month.',
     })
+  }
+
+  const handleOpenEdit = (record: BulkDisbursementRecord) => {
+    setEditingRecord(record)
+    setEditSheetOpen(true)
+  }
+
+  const handleSaveRecordEdit = (recordId: string, updates: Partial<BulkDisbursementRecord>) => {
+    if (!result) return
+    setResult(applyBulkDisbursementRecordEdit(result, recordId, updates))
+    setEditingRecord((current) => (current?.id === recordId ? { ...current, ...updates } as BulkDisbursementRecord : current))
   }
 
   return (
@@ -329,6 +345,8 @@ export function BulkDisbursementPage() {
             />
           </div>
 
+          <BulkPaymentMonthComparison paymentMonth={result.paymentMonth} showForecast />
+
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Disbursement Preview — {result.paymentMonth}</CardTitle>
@@ -348,13 +366,18 @@ export function BulkDisbursementPage() {
                       <TableHead className={adminTableStyles.headCell}>Status</TableHead>
                       <TableHead className={adminTableStyles.headCell}>Validation</TableHead>
                       <TableHead className={adminTableStyles.headCell}>Errors</TableHead>
+                      <TableHead className={cn(adminTableStyles.headCell, 'w-[88px] text-right')}>Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {result.records.map((record, index) => (
                       <TableRow
                         key={record.id}
-                        className={adminTableStyles.bodyRow}
+                        className={cn(
+                          adminTableStyles.bodyRow,
+                          !record.isValid && !record.isDuplicate && 'bg-rose-500/[0.03]',
+                          record.isDuplicate && 'bg-amber-500/[0.03]',
+                        )}
                         style={{ '--table-row-index': index } as React.CSSProperties}
                       >
                         <TableCell className={adminTableStyles.bodyCell}>{record.rowNumber}</TableCell>
@@ -378,9 +401,9 @@ export function BulkDisbursementPage() {
                         </TableCell>
                         <TableCell className={adminTableStyles.bodyCell}>
                           {record.isValid ? (
-                            <Badge className="bg-emerald-500/10 text-emerald-600">Valid</Badge>
+                            <Badge className="bg-primary/10 text-primary">Valid</Badge>
                           ) : record.isDuplicate ? (
-                            <Badge className="bg-amber-500/10 text-amber-600">Duplicate</Badge>
+                            <Badge className="bg-amber-500/10 text-amber-700 dark:text-amber-400">Duplicate</Badge>
                           ) : (
                             <Badge variant="destructive">Invalid</Badge>
                           )}
@@ -389,6 +412,20 @@ export function BulkDisbursementPage() {
                           className={cn(adminTableStyles.bodyCell, 'max-w-[200px] truncate text-xs text-destructive')}
                         >
                           {record.errors.join(', ')}
+                        </TableCell>
+                        <TableCell className={cn(adminTableStyles.bodyCell, 'text-right')}>
+                          {!record.isValid && (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              className="h-8 rounded-full px-3"
+                              onClick={() => handleOpenEdit(record)}
+                            >
+                              <PenLine className="size-3.5" />
+                              Edit
+                            </Button>
+                          )}
                         </TableCell>
                       </TableRow>
                     ))}
@@ -422,9 +459,9 @@ export function BulkDisbursementPage() {
           )}
 
           {phase === 'done' && (
-            <Card className={cn('border-emerald-500/30 bg-emerald-500/5')}>
+            <Card className="border-primary/25 bg-primary/5">
               <CardContent className="flex items-center gap-4 py-6">
-                <CheckCircle2 className="size-10 text-emerald-600" />
+                <CheckCircle2 className="size-10 text-primary" />
                 <div>
                   <h3 className="font-semibold">Disbursement Complete</h3>
                   <p className="text-sm text-muted-foreground">
@@ -439,6 +476,14 @@ export function BulkDisbursementPage() {
           )}
         </motion.div>
       )}
+
+      <BulkDisbursementEditSheet
+        open={editSheetOpen}
+        onOpenChange={setEditSheetOpen}
+        record={editingRecord}
+        result={result}
+        onSave={handleSaveRecordEdit}
+      />
     </AdminPageShell>
   )
 }

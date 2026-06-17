@@ -29,6 +29,7 @@ import { AddPensionerPage } from '@/pages/admin/pensioners/add-pensioner-page'
 import { BulkImportPage } from '@/pages/admin/pensioners/bulk-import-page'
 import { BulkDisbursementPage } from '@/pages/admin/disbursements/bulk-disbursement-page'
 import { ManualDisbursementPage } from '@/pages/admin/disbursements/manual-disbursement-page'
+import { PaymentMonthComparisonPage } from '@/pages/admin/disbursements/payment-month-comparison-page'
 import { PendingActivationsPage } from '@/pages/admin/pensioners/pending-activations-page'
 import { PensionersListPage } from '@/pages/admin/pensioners/pensioners-list-page'
 import { ViewPensionerPage } from '@/pages/admin/pensioners/view-pensioner-page'
@@ -251,6 +252,12 @@ const adminBulkDisbursementRoute = createRoute({
   getParentRoute: () => adminLayoutRoute,
   path: '/disbursements/bulk',
   component: BulkDisbursementPage,
+})
+
+const adminPaymentMonthComparisonRoute = createRoute({
+  getParentRoute: () => adminLayoutRoute,
+  path: '/disbursements/who-gets-paid',
+  component: PaymentMonthComparisonPage,
 })
 
 const adminManualDisbursementRoute = createRoute({
@@ -1612,6 +1619,7 @@ const routeTree = rootRoute.addChildren([
     adminAddPensionerRoute,
     adminBulkImportRoute,
     adminBulkDisbursementRoute,
+    adminPaymentMonthComparisonRoute,
     adminManualDisbursementRoute,
     adminPendingActivationsRoute,
     adminEditPensionerRoute,

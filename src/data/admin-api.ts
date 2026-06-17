@@ -3,10 +3,12 @@ import {
   generateBulkDisbursementPreview,
   recordManualDisbursement,
 } from '@/data/disbursement-mock-data'
+import { buildMonthlyPaymentAccountSummary } from '@/lib/bulk-payment-comparison'
 import type {
   BulkDisbursementResult,
   ConfirmBulkDisbursementInput,
   ManualDisbursementInput,
+  MonthlyPaymentAccountSummary,
 } from '@/types/disbursement'
 import {
   addPensioner,
@@ -165,6 +167,13 @@ export async function processBulkImport(fileName: string): Promise<BulkImportRes
 export async function confirmBulkImport(validRecordIds: string[]): Promise<{ imported: number }> {
   await delay(1200)
   return { imported: validRecordIds.length }
+}
+
+export async function fetchMonthlyPaymentAccountSummary(
+  paymentMonth: string,
+): Promise<MonthlyPaymentAccountSummary> {
+  await delay(500)
+  return buildMonthlyPaymentAccountSummary(paymentMonth)
 }
 
 export async function processBulkDisbursement(

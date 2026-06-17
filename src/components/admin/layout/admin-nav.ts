@@ -45,6 +45,7 @@ export const adminNavGroups: NavGroup[] = [
     label: 'Disbursements',
     icon: Wallet,
     items: [
+      { label: 'Who Gets Paid', href: '/admin/disbursements/who-gets-paid', icon: Users },
       { label: 'Manual Payment Entry', href: '/admin/disbursements/manual', icon: PenLine },
       { label: 'Bulk Monthly Payment', href: '/admin/disbursements/bulk', icon: Upload },
     ],
